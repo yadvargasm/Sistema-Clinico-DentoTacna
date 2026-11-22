@@ -58,12 +58,7 @@
     <Compile Include="frmAsistente.Designer.cs">
       <DependentUpon>frmAsistente.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmAtenciones.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="frmAtenciones.Designer.cs">
-      <DependentUpon>frmAtenciones.cs</DependentUpon>
-    </Compile>
+    <Compile Include="DatosDemo.cs" />
     <Compile Include="frmCitas.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -102,11 +97,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tema.cs" />
     <EmbeddedResource Include="frmAsistente.resx">
       <DependentUpon>frmAsistente.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="frmAtenciones.resx">
-      <DependentUpon>frmAtenciones.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmCitas.resx">
       <DependentUpon>frmCitas.cs</DependentUpon>

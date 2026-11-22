@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
@@ -15,51 +8,70 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
         public frmLogin()
         {
             InitializeComponent();
+            Tema.Aplicar(this);
         }
 
         private void btnMostrar_Click(object sender, EventArgs e)
         {
-            if (txtContrasenia.UseSystemPasswordChar == true)
-            {
-                txtContrasenia.UseSystemPasswordChar = false;
-                btnMostrar.Text = "Ocultar";
-            }
+            txtContrasenia.UseSystemPasswordChar = !txtContrasenia.UseSystemPasswordChar;
+            btnMostrar.Text = txtContrasenia.UseSystemPasswordChar ? "Mostrar" : "Ocultar";
+        }
+
+        // Enter en usuario pasa a la contraseña; Enter en la contraseña ingresa.
+        private void txtCampo_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter) return;
+            e.SuppressKeyPress = true;
+            if (sender == txtUsuario)
+                txtContrasenia.Focus();
             else
-            {
-                txtContrasenia.UseSystemPasswordChar = true;
-                btnMostrar.Text = "Mostrar";
-            }
+                btnIngresar.PerformClick();
         }
 
         private void btnIngresar_Click(object sender, EventArgs e)
         {
-            string usuario = txtUsuario.Text.Trim();
+            string usuario = txtUsuario.Text.Trim().ToLowerInvariant();
             string contrasena = txtContrasenia.Text;
-            string rol = cboRol.Text;
 
-            if (usuario == "" || contrasena == "" || rol == "")
+            // TODO (pendiente BD): validar contra dbo.Usuario con SHA-256 + sal desde la Capa de Negocio.
+            // Mientras tanto se aceptan los usuarios de prueba del prototipo con cualquier contraseña.
+            string[] datos = BuscarUsuarioPrueba(usuario);
+            if (datos == null || contrasena == "")
             {
-                MessageBox.Show(
-                    "Complete todos los campos.",
-                    "DentoTacna Smart",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning
-                );
-
+                pnlError.Visible = true;
                 return;
             }
 
-            frmPrincipal frm = new frmPrincipal(usuario, rol);
+            pnlError.Visible = false;
+            var principal = new frmPrincipal(datos[0], datos[1], datos[2], datos[3]);
 
-            this.Hide();
-            frm.ShowDialog();
-            this.Show();
+            Hide();
+            principal.ShowDialog();
 
+            if (principal.CerroSesion)
+            {
+                txtContrasenia.Clear();
+                Show();
+                txtContrasenia.Focus();
+            }
+            else
+            {
+                Close();
+            }
+        }
+
+        private static string[] BuscarUsuarioPrueba(string usuario)
+        {
+            foreach (string[] u in DatosDemo.Usuarios)
+            {
+                if (u[0] == usuario) return u;
+            }
+            return null;
         }
 
         private void btnSalir_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
     }
 }
