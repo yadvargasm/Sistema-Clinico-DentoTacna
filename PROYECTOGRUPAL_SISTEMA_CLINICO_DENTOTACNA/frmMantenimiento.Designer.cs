@@ -414,7 +414,7 @@
             this.btnEliminarOdontologo.Name = "btnEliminarOdontologo";
             this.btnEliminarOdontologo.Size = new System.Drawing.Size(100, 34);
             this.btnEliminarOdontologo.TabIndex = 13;
-            this.btnEliminarOdontologo.Text = "Eliminar";
+            this.btnEliminarOdontologo.Text = "Desactivar";
             this.btnEliminarOdontologo.Click += new System.EventHandler(this.btnEliminarOdontologo_Click);
             //
             // btnGuardarOdontologo

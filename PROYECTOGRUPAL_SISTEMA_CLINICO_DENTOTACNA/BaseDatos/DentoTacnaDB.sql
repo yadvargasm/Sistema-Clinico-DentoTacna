@@ -23,7 +23,8 @@
    7. Pagos          -> cargos, pagos y su detalle.
    8. Asistente IA   -> registro de consultas.
    9. Vistas         -> consultas listas para el panel, pagos y el asistente IA.
-   10. Datos iniciales
+   10. Procedimientos -> USP_ (por ahora, Odontólogo).
+   11. Datos iniciales
 
    CONVENCIONES (para seguir añadiendo tablas)
    - Tablas en singular y PascalCase. Llave primaria: Id + NombreTabla.
@@ -439,7 +440,99 @@ JOIN    dbo.Odontologo o ON o.IdOdontologo = a.IdOdontologo;
 GO
 
 /* =====================================================================
-   10. DATOS INICIALES
+   10. PROCEDIMIENTOS ALMACENADOS
+   Se usa CREATE OR ALTER: si ya tienen la base creada, pueden ejecutar
+   solo esta sección para agregar o actualizar los procedimientos.
+   ===================================================================== */
+
+-- ---------------------------------------------------------- Odontólogos
+
+CREATE OR ALTER PROCEDURE dbo.USP_ListarEspecialidades
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT IdEspecialidad, Nombre
+    FROM   dbo.Especialidad
+    WHERE  Activo = 1
+    ORDER BY Nombre;
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_ListarOdontologos
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT  o.IdOdontologo, o.Codigo, o.Nombres, o.Apellidos, o.NumeroCOP,
+            o.Telefono, o.Correo, o.IdEspecialidad, e.Nombre AS Especialidad, o.Activo
+    FROM    dbo.Odontologo o
+    JOIN    dbo.Especialidad e ON e.IdEspecialidad = o.IdEspecialidad
+    ORDER BY o.IdOdontologo;
+END
+GO
+
+-- Devuelve 1 si el N.° COP ya lo usa OTRO odontólogo (@IdOdontologo = el que se edita, o NULL si es nuevo).
+CREATE OR ALTER PROCEDURE dbo.USP_ExisteNumeroCOP
+    @NumeroCOP     VARCHAR(10),
+    @IdOdontologo  INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.Odontologo
+                             WHERE NumeroCOP = @NumeroCOP
+                               AND (@IdOdontologo IS NULL OR IdOdontologo <> @IdOdontologo))
+                THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END;
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_RegistrarOdontologo
+    @Nombres         NVARCHAR(60),
+    @Apellidos       NVARCHAR(60),
+    @NumeroCOP       VARCHAR(10),
+    @Telefono        VARCHAR(15)   = NULL,
+    @Correo          NVARCHAR(100) = NULL,
+    @IdEspecialidad  TINYINT,
+    @Activo          BIT = 1,
+    @IdOdontologo    INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Odontologo (Nombres, Apellidos, NumeroCOP, Telefono, Correo, IdEspecialidad, Activo)
+    VALUES (@Nombres, @Apellidos, @NumeroCOP, @Telefono, @Correo, @IdEspecialidad, @Activo);
+    SET @IdOdontologo = SCOPE_IDENTITY();
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_ActualizarOdontologo
+    @IdOdontologo    INT,
+    @Nombres         NVARCHAR(60),
+    @Apellidos       NVARCHAR(60),
+    @NumeroCOP       VARCHAR(10),
+    @Telefono        VARCHAR(15)   = NULL,
+    @Correo          NVARCHAR(100) = NULL,
+    @IdEspecialidad  TINYINT,
+    @Activo          BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Odontologo
+    SET    Nombres = @Nombres, Apellidos = @Apellidos, NumeroCOP = @NumeroCOP,
+           Telefono = @Telefono, Correo = @Correo, IdEspecialidad = @IdEspecialidad, Activo = @Activo
+    WHERE  IdOdontologo = @IdOdontologo;
+END
+GO
+
+-- Borrado lógico: el odontólogo tiene citas y atenciones asociadas, no se elimina.
+CREATE OR ALTER PROCEDURE dbo.USP_DesactivarOdontologo
+    @IdOdontologo INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Odontologo SET Activo = 0 WHERE IdOdontologo = @IdOdontologo;
+END
+GO
+
+/* =====================================================================
+   11. DATOS INICIALES
    ===================================================================== */
 
 INSERT INTO dbo.Rol (IdRol, Nombre, Descripcion) VALUES

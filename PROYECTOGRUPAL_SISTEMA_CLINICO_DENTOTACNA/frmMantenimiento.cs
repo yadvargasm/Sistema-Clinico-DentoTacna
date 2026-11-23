@@ -1,10 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
+using CapaEntidad;
+using CapaNegocio;
 
 namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
 {
     public partial class frmMantenimiento : Form
     {
+        private readonly clsOdontologo_N negocioOdontologo = new clsOdontologo_N();
+
         public frmMantenimiento()
         {
             InitializeComponent();
@@ -12,20 +17,19 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
             Tema.PintarEtiquetas(dgvOdontologos, "colEstado");
             Tema.PintarEtiquetas(dgvUsuarios, "colEstadoUsuario");
 
-            cboEspecialidad.Items.AddRange(DatosDemo.Especialidades);
             cboRol.Items.AddRange(DatosDemo.Roles);
             cboOdontologoVinculado.Items.Add("— Ninguno —");
             cboOdontologoVinculado.Items.AddRange(DatosDemo.OdontologosLargo);
 
-            // TODO (pendiente BD): leer odontólogos, tratamientos y usuarios desde la Capa de Negocio.
-            foreach (object[] o in DatosDemo.Odontologos)
-                dgvOdontologos.Rows.Add(o[0], o[1], o[2], o[3], o[5]);
+            CargarEspecialidades();
+            CargarOdontologos(0);
+
+            // TODO (pendiente BD): leer tratamientos y usuarios desde la Capa de Negocio.
             foreach (object[] t in DatosDemo.Tratamientos)
                 dgvTratamientos.Rows.Add(t[0], t[1], t[2] + " min", Tema.Dinero((decimal)t[3]));
             foreach (object[] u in DatosDemo.UsuariosTabla)
                 dgvUsuarios.Rows.Add(u);
 
-            dgvOdontologos_SelectionChanged(null, EventArgs.Empty);
             if (dgvTratamientos.Rows.Count > 1) dgvTratamientos.CurrentCell = dgvTratamientos.Rows[1].Cells[0];
             dgvTratamientos_SelectionChanged(null, EventArgs.Empty);
             if (dgvUsuarios.Rows.Count > 2) dgvUsuarios.CurrentCell = dgvUsuarios.Rows[2].Cells[0];
@@ -52,20 +56,71 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
             return true;
         }
 
+        private void MostrarErrorBD(string accion, Exception ex)
+        {
+            MessageBox.Show("No se pudo " + accion + ".\n\n" + ex.Message +
+                            "\n\nRevise que la base de datos esté creada y la cadena \"DentoTacnaDB\" de App.config.",
+                            "DentoTacna", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
         // ---------------------------------------------------------- Odontólogos
+
+        private void CargarEspecialidades()
+        {
+            try
+            {
+                cboEspecialidad.DisplayMember = "Nombre";
+                cboEspecialidad.ValueMember = "IdEspecialidad";
+                cboEspecialidad.DataSource = negocioOdontologo.mtdListarEspecialidades();
+                cboEspecialidad.SelectedIndex = -1;
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorBD("cargar las especialidades", ex);
+            }
+        }
+
+        /// <summary>Lee los odontólogos de la BD y deja seleccionado el de <paramref name="idSeleccionar"/> (0 = el primero).</summary>
+        private void CargarOdontologos(int idSeleccionar)
+        {
+            List<clsOdontologo> lista;
+            try
+            {
+                lista = negocioOdontologo.mtdListarOdontologos();
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorBD("cargar los odontólogos", ex);
+                return;
+            }
+
+            dgvOdontologos.Rows.Clear();
+            foreach (clsOdontologo o in lista)
+            {
+                int i = dgvOdontologos.Rows.Add(o.codigo, o.NombreCompleto, o.numeroCOP, o.especialidad,
+                                                o.activo ? "Activo" : "Inactivo");
+                dgvOdontologos.Rows[i].Tag = o;
+                if (o.idOdontologo == idSeleccionar)
+                    dgvOdontologos.CurrentCell = dgvOdontologos.Rows[i].Cells[0];
+            }
+            dgvOdontologos_SelectionChanged(null, EventArgs.Empty);
+        }
+
+        private clsOdontologo OdontologoSeleccionado()
+        {
+            return dgvOdontologos.CurrentRow == null ? null : dgvOdontologos.CurrentRow.Tag as clsOdontologo;
+        }
 
         private void dgvOdontologos_SelectionChanged(object sender, EventArgs e)
         {
-            if (dgvOdontologos.CurrentRow == null) return;
-            DataGridViewRow f = dgvOdontologos.CurrentRow;
-            string nombre = Convert.ToString(f.Cells[colOdontologo.Index].Value);
-            string[] p = nombre.Replace("Dra. ", "").Replace("Dr. ", "").Split(' ');
-            txtNombres.Text = p[0];
-            txtApellidos.Text = p.Length > 1 ? string.Join(" ", p, 1, p.Length - 1) : "";
-            txtCop.Text = Convert.ToString(f.Cells[colCop.Index].Value);
-            txtTelefono.Text = Convert.ToString(DatosDemo.Odontologos[Math.Min(f.Index, DatosDemo.Odontologos.Length - 1)][4]);
-            Seleccionar(cboEspecialidad, Convert.ToString(f.Cells[colEspecialidad.Index].Value));
-            chkActivo.Checked = Convert.ToString(f.Cells[colEstado.Index].Value) == "Activo";
+            clsOdontologo o = OdontologoSeleccionado();
+            if (o == null) return;
+            txtNombres.Text = o.nombres;
+            txtApellidos.Text = o.apellidos;
+            txtCop.Text = o.numeroCOP;
+            txtTelefono.Text = o.telefono;
+            Seleccionar(cboEspecialidad, o.especialidad);
+            chkActivo.Checked = o.activo;
         }
 
         private void btnNuevoOdontologo_Click(object sender, EventArgs e)
@@ -80,27 +135,57 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
         private void btnGuardarOdontologo_Click(object sender, EventArgs e)
         {
             if (!Validar(txtNombres, txtApellidos, txtCop, cboEspecialidad)) return;
-            // TODO (pendiente BD): el N.° COP debe ser único (lo valida la Capa de Negocio).
-            string nombre = "Dr(a). " + txtNombres.Text.Trim() + " " + txtApellidos.Text.Trim();
-            object[] fila = { null, nombre, txtCop.Text.Trim(), cboEspecialidad.SelectedItem, chkActivo.Checked ? "Activo" : "Inactivo" };
-            if (dgvOdontologos.CurrentRow == null)
+
+            clsOdontologo actual = OdontologoSeleccionado();
+            clsOdontologo o = new clsOdontologo
             {
-                fila[0] = "OD-" + (dgvOdontologos.Rows.Count + 1).ToString("00");
-                dgvOdontologos.Rows.Add(fila);
-            }
-            else
+                idOdontologo = actual == null ? 0 : actual.idOdontologo,
+                nombres = txtNombres.Text,
+                apellidos = txtApellidos.Text,
+                numeroCOP = txtCop.Text,
+                telefono = txtTelefono.Text,
+                correo = actual == null ? null : actual.correo,   // el formulario aún no tiene campo de correo
+                idEspecialidad = Convert.ToInt32(cboEspecialidad.SelectedValue),
+                activo = chkActivo.Checked,
+            };
+
+            string mensaje;
+            try
             {
-                for (int i = 1; i < fila.Length; i++) dgvOdontologos.CurrentRow.Cells[i].Value = fila[i];
+                if (!negocioOdontologo.mtdGuardarOdontologo(o, out mensaje))
+                {
+                    MessageBox.Show(mensaje, "DentoTacna", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
             }
+            catch (Exception ex)
+            {
+                MostrarErrorBD("guardar el odontólogo", ex);
+                return;
+            }
+
+            CargarOdontologos(o.idOdontologo);
             Tema.Aviso(this, "Odontólogo guardado");
         }
 
+        // Borrado lógico: el odontólogo queda "Inactivo" porque puede tener citas y atenciones.
         private void btnEliminarOdontologo_Click(object sender, EventArgs e)
         {
-            if (dgvOdontologos.CurrentRow == null) return;
-            if (MessageBox.Show("¿Eliminar el odontólogo seleccionado?", "DentoTacna", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-            dgvOdontologos.Rows.Remove(dgvOdontologos.CurrentRow);
-            Tema.Aviso(this, "Odontólogo eliminado");
+            clsOdontologo o = OdontologoSeleccionado();
+            if (o == null) return;
+            if (MessageBox.Show("¿Desactivar a " + o.NombreCompleto + "?\nSe conserva su historial de citas y atenciones.",
+                                "DentoTacna", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            try
+            {
+                negocioOdontologo.mtdDesactivarOdontologo(o.idOdontologo);
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorBD("desactivar el odontólogo", ex);
+                return;
+            }
+            CargarOdontologos(o.idOdontologo);
+            Tema.Aviso(this, "Odontólogo desactivado");
         }
 
         // --------------------------------------------------------- Tratamientos
