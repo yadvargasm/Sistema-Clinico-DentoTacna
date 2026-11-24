@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CapaEntidad;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -31,6 +32,68 @@ namespace CapaDatos
                 {
                     leer.Close();
                 }
+                cmd.Dispose();
+                conexion.mtdCerrarConexion();
+            }
+        }
+        
+        public void mtdRegistrarOdontologo(clsOdontologo odontologo)
+        {
+            SqlCommand cmd = new SqlCommand();
+            try
+            {
+                cmd.Connection = conexion.mtdAbrirConexion();
+                cmd.CommandText = "USP_RegistrarOdontologo";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@nombres", odontologo.nombres);
+                cmd.Parameters.AddWithValue("@apellidos", odontologo.apellidos);
+                cmd.Parameters.AddWithValue("@nroCOP", odontologo.numeroCOP);
+                cmd.Parameters.AddWithValue("@telefono", odontologo.telefono);
+                cmd.Parameters.AddWithValue("@idEspecialidad", odontologo.idEspecialidad);
+                cmd.ExecuteNonQuery();
+            }
+            finally
+            {
+                cmd.Dispose();
+                conexion.mtdCerrarConexion();
+            }
+        }
+        public void mtdActualizarOdontologo(clsOdontologo odontologo)
+        {
+            SqlCommand cmd = new SqlCommand();
+            try
+            {
+                cmd.Connection = conexion.mtdAbrirConexion();
+                cmd.CommandText = "USP_ActualizarOdontologo";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@idOdontologo", odontologo.idOdontologo);
+                cmd.Parameters.AddWithValue("@nombres", odontologo.nombres);
+                cmd.Parameters.AddWithValue("@apellidos", odontologo.apellidos);
+                cmd.Parameters.AddWithValue("@nroCOP", odontologo.numeroCOP);
+                cmd.Parameters.AddWithValue("@telefono", odontologo.telefono);
+                cmd.Parameters.AddWithValue("@idEspecialidad", odontologo.idEspecialidad);
+                cmd.ExecuteNonQuery();
+            }
+            finally
+            {
+                cmd.Dispose();
+                conexion.mtdCerrarConexion();
+            }
+        }
+        public void mtdEliminarOdontologo(int idOdontologo)
+        {
+            SqlCommand cmd = new SqlCommand();
+            try
+            {
+                cmd.Connection = conexion.mtdAbrirConexion();
+                cmd.CommandText = "USP_EliminarOdontologo";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@idOdontologo", idOdontologo);
+                cmd.ExecuteNonQuery();
+
+            }
+            finally
+            {
                 cmd.Dispose();
                 conexion.mtdCerrarConexion();
             }

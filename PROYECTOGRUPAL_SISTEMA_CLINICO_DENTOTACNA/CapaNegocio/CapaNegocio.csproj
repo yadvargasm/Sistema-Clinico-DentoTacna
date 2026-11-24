@@ -41,13 +41,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="clsEspecialidad_N.cs" />
     <Compile Include="clsOdontologo_N.cs" />
+    <Compile Include="clsTratamiento_N.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapaDatos\CapaDatos.csproj">
       <Project>{be1fda3b-ee9b-44c8-a23a-be4b983fcd0d}</Project>
       <Name>CapaDatos</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CapaEntidad\CapaEntidad.csproj">
+      <Project>{d16e8126-6261-4671-9825-82f350f3a5fd}</Project>
+      <Name>CapaEntidad</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

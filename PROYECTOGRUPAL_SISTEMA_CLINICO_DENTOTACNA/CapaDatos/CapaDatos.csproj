@@ -42,8 +42,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="clsConexion.cs" />
+    <Compile Include="clsEspecialidad_D.cs" />
     <Compile Include="clsOdontologo_D.cs" />
+    <Compile Include="clsTratamiento_D.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CapaEntidad\CapaEntidad.csproj">
+      <Project>{d16e8126-6261-4671-9825-82f350f3a5fd}</Project>
+      <Name>CapaEntidad</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

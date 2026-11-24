@@ -16,7 +16,7 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new frmLogin());
+            Application.Run(new frmMantenimiento());
         }
     }
 }

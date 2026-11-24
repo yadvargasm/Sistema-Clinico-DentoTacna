@@ -156,5 +156,15 @@
   <ItemGroup>
     <None Include="Resources\Diente brillante con corazón ortodóntico.png" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CapaEntidad\CapaEntidad.csproj">
+      <Project>{d16e8126-6261-4671-9825-82f350f3a5fd}</Project>
+      <Name>CapaEntidad</Name>
+    </ProjectReference>
+    <ProjectReference Include="CapaNegocio\CapaNegocio.csproj">
+      <Project>{e7887d20-2370-4acb-9eea-b1c02e6c66c2}</Project>
+      <Name>CapaNegocio</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
