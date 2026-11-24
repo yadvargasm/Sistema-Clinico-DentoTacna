@@ -35,12 +35,6 @@ namespace CapaNegocio
             return lista;
         }
 
-        /// <summary>Columnas: IdEspecialidad, Nombre. Lista para usar como DataSource de un ComboBox.</summary>
-        public DataTable mtdListarEspecialidades()
-        {
-            return objOdontologo.mtdListarEspecialidades();
-        }
-
         /// <summary>
         /// Valida y guarda (registra si idOdontologo = 0, si no actualiza).
         /// Devuelve false con el motivo en <paramref name="mensaje"/> si algún dato no es válido.

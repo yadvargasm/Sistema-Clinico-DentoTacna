@@ -41,7 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="clsEspecialidad_N.cs" />
     <Compile Include="clsOdontologo_N.cs" />
+    <Compile Include="clsTratamiento_N.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

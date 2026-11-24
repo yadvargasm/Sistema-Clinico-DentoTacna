@@ -23,7 +23,7 @@
    7. Pagos          -> cargos, pagos y su detalle.
    8. Asistente IA   -> registro de consultas.
    9. Vistas         -> consultas listas para el panel, pagos y el asistente IA.
-   10. Procedimientos -> USP_ (por ahora, Odontólogo).
+   10. Procedimientos -> USP_ (Odontólogo y Tratamiento).
    11. Datos iniciales
 
    CONVENCIONES (para seguir añadiendo tablas)
@@ -528,6 +528,75 @@ AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.Odontologo SET Activo = 0 WHERE IdOdontologo = @IdOdontologo;
+END
+GO
+
+-- --------------------------------------------------------- Tratamientos
+
+-- Solo los activos: los desactivados ya no se ofrecen en citas ni planes.
+CREATE OR ALTER PROCEDURE dbo.USP_ListarTratamientos
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT  IdTratamiento, Codigo, Nombre, Descripcion, Precio, DuracionMin, Activo
+    FROM    dbo.Tratamiento
+    WHERE   Activo = 1
+    ORDER BY IdTratamiento;
+END
+GO
+
+-- Devuelve 1 si el nombre ya lo usa OTRO tratamiento (@IdTratamiento = el que se edita, o NULL si es nuevo).
+-- Incluye los inactivos porque la columna Nombre es UNIQUE en toda la tabla.
+CREATE OR ALTER PROCEDURE dbo.USP_ExisteNombreTratamiento
+    @Nombre         NVARCHAR(100),
+    @IdTratamiento  INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.Tratamiento
+                             WHERE Nombre = @Nombre
+                               AND (@IdTratamiento IS NULL OR IdTratamiento <> @IdTratamiento))
+                THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END;
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_RegistrarTratamiento
+    @Nombre         NVARCHAR(100),
+    @Descripcion    NVARCHAR(300) = NULL,
+    @Precio         DECIMAL(10,2),
+    @DuracionMin    SMALLINT,
+    @IdTratamiento  INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Tratamiento (Nombre, Descripcion, Precio, DuracionMin)
+    VALUES (@Nombre, @Descripcion, @Precio, @DuracionMin);
+    SET @IdTratamiento = SCOPE_IDENTITY();
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.USP_ActualizarTratamiento
+    @IdTratamiento  INT,
+    @Nombre         NVARCHAR(100),
+    @Descripcion    NVARCHAR(300) = NULL,
+    @Precio         DECIMAL(10,2),
+    @DuracionMin    SMALLINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Tratamiento
+    SET    Nombre = @Nombre, Descripcion = @Descripcion, Precio = @Precio, DuracionMin = @DuracionMin
+    WHERE  IdTratamiento = @IdTratamiento;
+END
+GO
+
+-- Borrado lógico: las citas y planes de tratamiento lo referencian, no se elimina.
+CREATE OR ALTER PROCEDURE dbo.USP_DesactivarTratamiento
+    @IdTratamiento INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Tratamiento SET Activo = 0 WHERE IdTratamiento = @IdTratamiento;
 END
 GO
 

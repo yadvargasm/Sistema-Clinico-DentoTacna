@@ -15,11 +15,6 @@ namespace CapaDatos
             return Consultar("USP_ListarOdontologos");
         }
 
-        public DataTable mtdListarEspecialidades()
-        {
-            return Consultar("USP_ListarEspecialidades");
-        }
-
         /// <summary>True si el N.° COP ya pertenece a otro odontólogo (idExcluir = el que se edita, 0 si es nuevo).</summary>
         public bool mtdExisteNumeroCOP(string numeroCOP, int idExcluir)
         {

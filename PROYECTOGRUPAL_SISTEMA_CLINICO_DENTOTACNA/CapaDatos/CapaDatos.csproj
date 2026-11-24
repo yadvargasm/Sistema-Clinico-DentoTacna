@@ -43,7 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="clsConexion.cs" />
+    <Compile Include="clsEspecialidad_D.cs" />
     <Compile Include="clsOdontologo_D.cs" />
+    <Compile Include="clsTratamiento_D.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

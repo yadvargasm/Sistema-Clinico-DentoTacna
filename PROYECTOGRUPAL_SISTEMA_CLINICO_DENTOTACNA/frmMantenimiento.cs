@@ -9,6 +9,8 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
     public partial class frmMantenimiento : Form
     {
         private readonly clsOdontologo_N negocioOdontologo = new clsOdontologo_N();
+        private readonly clsEspecialidad_N negocioEspecialidad = new clsEspecialidad_N();
+        private readonly clsTratamiento_N negocioTratamiento = new clsTratamiento_N();
 
         public frmMantenimiento()
         {
@@ -16,6 +18,7 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
             Tema.Aplicar(this);
             Tema.PintarEtiquetas(dgvOdontologos, "colEstado");
             Tema.PintarEtiquetas(dgvUsuarios, "colEstadoUsuario");
+            ConectarFiltrosTeclado();
 
             cboRol.Items.AddRange(DatosDemo.Roles);
             cboOdontologoVinculado.Items.Add("— Ninguno —");
@@ -23,17 +26,61 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
 
             CargarEspecialidades();
             CargarOdontologos(0);
+            CargarTratamientos(0);
 
-            // TODO (pendiente BD): leer tratamientos y usuarios desde la Capa de Negocio.
-            foreach (object[] t in DatosDemo.Tratamientos)
-                dgvTratamientos.Rows.Add(t[0], t[1], t[2] + " min", Tema.Dinero((decimal)t[3]));
+            // TODO (pendiente BD): leer usuarios desde la Capa de Negocio.
             foreach (object[] u in DatosDemo.UsuariosTabla)
                 dgvUsuarios.Rows.Add(u);
 
-            if (dgvTratamientos.Rows.Count > 1) dgvTratamientos.CurrentCell = dgvTratamientos.Rows[1].Cells[0];
-            dgvTratamientos_SelectionChanged(null, EventArgs.Empty);
             if (dgvUsuarios.Rows.Count > 2) dgvUsuarios.CurrentCell = dgvUsuarios.Rows[2].Cells[0];
             dgvUsuarios_SelectionChanged(null, EventArgs.Empty);
+        }
+
+        // ---------------------------------------------------- Filtros de teclado
+        // Traídos de la rama de Jesús. Bloquean la tecla mientras se escribe;
+        // la validación completa sigue en la Capa de Negocio al guardar.
+
+        private void ConectarFiltrosTeclado()
+        {
+            txtNombres.KeyPress += SoloLetras;
+            txtApellidos.KeyPress += SoloLetras;
+            txtNombreCompleto.KeyPress += SoloLetras;
+            txtCop.KeyPress += SoloDigitos;
+            txtTelefono.KeyPress += SoloTelefono;
+            txtPrecio.KeyPress += SoloDecimal;
+        }
+
+        // Letras (con tildes y ñ), espacio, apóstrofo y guion: "María José", "O'Brien", "Pérez-Rojas".
+        private static void SoloLetras(object sender, KeyPressEventArgs e)
+        {
+            char c = e.KeyChar;
+            if (!char.IsControl(c) && !char.IsLetter(c) && c != ' ' && c != '\'' && c != '-')
+                e.Handled = true;
+        }
+
+        private static void SoloDigitos(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+                e.Handled = true;
+        }
+
+        // Mismos caracteres que acepta clsOdontologo_N: dígitos, espacio, + y -.
+        private static void SoloTelefono(object sender, KeyPressEventArgs e)
+        {
+            char c = e.KeyChar;
+            if (!char.IsControl(c) && !char.IsDigit(c) && c != ' ' && c != '+' && c != '-')
+                e.Handled = true;
+        }
+
+        // Dígitos y un solo separador decimal (punto o coma; Tema.Numero acepta ambos).
+        private static void SoloDecimal(object sender, KeyPressEventArgs e)
+        {
+            char c = e.KeyChar;
+            if (char.IsControl(c) || char.IsDigit(c)) return;
+            string texto = ((Control)sender).Text;
+            bool esSeparador = c == '.' || c == ',';
+            if (!esSeparador || texto.Contains(".") || texto.Contains(","))
+                e.Handled = true;
         }
 
         private static void Seleccionar(ComboBox combo, string texto)
@@ -71,7 +118,7 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
             {
                 cboEspecialidad.DisplayMember = "Nombre";
                 cboEspecialidad.ValueMember = "IdEspecialidad";
-                cboEspecialidad.DataSource = negocioOdontologo.mtdListarEspecialidades();
+                cboEspecialidad.DataSource = negocioEspecialidad.mtdListarEspecialidades();
                 cboEspecialidad.SelectedIndex = -1;
             }
             catch (Exception ex)
@@ -190,16 +237,45 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
 
         // --------------------------------------------------------- Tratamientos
 
+        /// <summary>Lee los tratamientos activos de la BD y deja seleccionado el de <paramref name="idSeleccionar"/> (0 = el primero).</summary>
+        private void CargarTratamientos(int idSeleccionar)
+        {
+            List<clsTratamiento> lista;
+            try
+            {
+                lista = negocioTratamiento.mtdListarTratamientos();
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorBD("cargar los tratamientos", ex);
+                return;
+            }
+
+            dgvTratamientos.Rows.Clear();
+            foreach (clsTratamiento t in lista)
+            {
+                int i = dgvTratamientos.Rows.Add(t.codigo, t.nombre, t.duracionMin + " min", Tema.Dinero(t.precio));
+                dgvTratamientos.Rows[i].Tag = t;
+                if (t.idTratamiento == idSeleccionar)
+                    dgvTratamientos.CurrentCell = dgvTratamientos.Rows[i].Cells[0];
+            }
+            if (dgvTratamientos.Rows.Count == 0) btnNuevoTratamiento_Click(null, EventArgs.Empty);
+            dgvTratamientos_SelectionChanged(null, EventArgs.Empty);
+        }
+
+        private clsTratamiento TratamientoSeleccionado()
+        {
+            return dgvTratamientos.CurrentRow == null ? null : dgvTratamientos.CurrentRow.Tag as clsTratamiento;
+        }
+
         private void dgvTratamientos_SelectionChanged(object sender, EventArgs e)
         {
-            if (dgvTratamientos.CurrentRow == null) return;
-            DataGridViewRow f = dgvTratamientos.CurrentRow;
-            txtNombreTratamiento.Text = Convert.ToString(f.Cells[colTratamiento.Index].Value);
-            txtPrecio.Text = Tema.Numero(Convert.ToString(f.Cells[colPrecio.Index].Value).Replace(" ", "")).ToString("0.00");
-            int minutos;
-            if (int.TryParse(Convert.ToString(f.Cells[colDuracion.Index].Value).Replace(" min", ""), out minutos))
-                nudDuracion.Value = Math.Max(nudDuracion.Minimum, Math.Min(nudDuracion.Maximum, minutos));
-            txtDescripcion.Text = txtNombreTratamiento.Text == "Resina compuesta" ? "Restauración estética de una pieza dental." : "";
+            clsTratamiento t = TratamientoSeleccionado();
+            if (t == null) return;
+            txtNombreTratamiento.Text = t.nombre;
+            txtPrecio.Text = t.precio.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+            nudDuracion.Value = Math.Max(nudDuracion.Minimum, Math.Min(nudDuracion.Maximum, t.duracionMin));
+            txtDescripcion.Text = t.descripcion;
         }
 
         private void btnNuevoTratamiento_Click(object sender, EventArgs e)
@@ -213,25 +289,54 @@ namespace PROYECTOGRUPAL_SISTEMA_CLINICO_DENTOTACNA
         private void btnGuardarTratamiento_Click(object sender, EventArgs e)
         {
             if (!Validar(txtNombreTratamiento, txtPrecio)) return;
-            decimal precio = Tema.Numero(txtPrecio.Text);
-            object[] fila = { null, txtNombreTratamiento.Text.Trim(), nudDuracion.Value + " min", Tema.Dinero(precio) };
-            if (dgvTratamientos.CurrentRow == null)
+
+            clsTratamiento actual = TratamientoSeleccionado();
+            clsTratamiento t = new clsTratamiento
             {
-                fila[0] = "TR-" + (dgvTratamientos.Rows.Count + 1).ToString("00");
-                dgvTratamientos.Rows.Add(fila);
-            }
-            else
+                idTratamiento = actual == null ? 0 : actual.idTratamiento,
+                nombre = txtNombreTratamiento.Text,
+                descripcion = txtDescripcion.Text,
+                precio = Tema.Numero(txtPrecio.Text),
+                duracionMin = (int)nudDuracion.Value,
+                activo = true,
+            };
+
+            string mensaje;
+            try
             {
-                for (int i = 1; i < fila.Length; i++) dgvTratamientos.CurrentRow.Cells[i].Value = fila[i];
+                if (!negocioTratamiento.mtdGuardarTratamiento(t, out mensaje))
+                {
+                    MessageBox.Show(mensaje, "DentoTacna", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
             }
+            catch (Exception ex)
+            {
+                MostrarErrorBD("guardar el tratamiento", ex);
+                return;
+            }
+
+            CargarTratamientos(t.idTratamiento);
             Tema.Aviso(this, "Tratamiento guardado");
         }
 
+        // Borrado lógico: el tratamiento deja de listarse pero las citas y planes antiguos lo conservan.
         private void btnEliminarTratamiento_Click(object sender, EventArgs e)
         {
-            if (dgvTratamientos.CurrentRow == null) return;
-            if (MessageBox.Show("¿Eliminar el tratamiento seleccionado?", "DentoTacna", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-            dgvTratamientos.Rows.Remove(dgvTratamientos.CurrentRow);
+            clsTratamiento t = TratamientoSeleccionado();
+            if (t == null) return;
+            if (MessageBox.Show("¿Eliminar el tratamiento \"" + t.nombre + "\"?\nDejará de aparecer en la lista; las citas y planes anteriores se conservan.",
+                                "DentoTacna", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            try
+            {
+                negocioTratamiento.mtdDesactivarTratamiento(t.idTratamiento);
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorBD("eliminar el tratamiento", ex);
+                return;
+            }
+            CargarTratamientos(0);
             Tema.Aviso(this, "Tratamiento eliminado");
         }
 
